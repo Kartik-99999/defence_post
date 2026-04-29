@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>DefencePost Admin Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Oswald:wght@500;600&family=Source+Sans+3:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    :root{--navy:#0a1628;--gold:#c9a84c;--red:#c0392b;--green:#27ae60;--bg:#f0f2f5;--white:#fff;--border:#e0e0e0;--text:#1a1a2e;--muted:#777;--sidebar:240px}
+    body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+    /* ── LOGIN ── */
+    #login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--navy);flex-direction:column;gap:30px}
+    .login-box{background:var(--white);padding:40px;width:380px;border-top:4px solid var(--gold)}
+    .login-logo{font-family:'Playfair Display',serif;font-size:28px;color:var(--gold);text-align:center;margin-bottom:6px}
+    .login-logo span{color:var(--red)}
+    .login-sub{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;color:#aab;text-align:center;margin-bottom:28px}
+    .form-group{margin-bottom:16px}
+    .form-group label{display:block;font-size:12px;font-family:'Oswald',sans-serif;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+    .form-group input,.form-group select,.form-group textarea{width:100%;padding:11px 14px;border:1px solid var(--border);font-family:'Source Sans 3',sans-serif;font-size:14px;outline:none;transition:border-color .2s;background:var(--white);color:var(--text)}
+    .form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--navy)}
+    .form-group textarea{resize:vertical;min-height:120px;line-height:1.6}
+    .btn{padding:11px 22px;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;border:none;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+    .btn-primary{background:var(--navy);color:var(--gold);width:100%}
+    .btn-primary:hover{background:#1a2f50}
+    .btn-success{background:var(--green);color:#fff}
+    .btn-success:hover{background:#219a52}
+    .btn-danger{background:var(--red);color:#fff}
+    .btn-danger:hover{background:#a93226}
+    .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+    .btn-ghost:hover{border-color:var(--navy);color:var(--navy)}
+    .btn-gold{background:var(--gold);color:var(--navy)}
+    .btn-gold:hover{background:#b8962e}
+    .login-error{background:#fdecea;color:var(--red);padding:10px;font-size:13px;margin-bottom:14px;display:none}
+
+    /* ── ADMIN LAYOUT ── */
+    #admin-app{display:none;min-height:100vh}
+    .admin-layout{display:flex;min-height:100vh}
+
+    /* SIDEBAR */
+    .sidebar{width:var(--sidebar);background:var(--navy);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+    .sidebar-logo{padding:22px 20px;border-bottom:1px solid rgba(255,255,255,.1)}
+    .sidebar-logo-text{font-family:'Playfair Display',serif;font-size:20px;color:var(--gold)}
+    .sidebar-logo-text span{color:var(--red)}
+    .sidebar-logo-sub{font-size:10px;color:#556;letter-spacing:1px;margin-top:3px}
+    .sidebar-nav{flex:1;padding:16px 0}
+    .nav-item{display:flex;align-items:center;gap:12px;padding:12px 20px;color:#aab;font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;transition:all .15s;border-left:3px solid transparent}
+    .nav-item:hover{color:var(--gold);background:rgba(255,255,255,.04)}
+    .nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(201,168,76,.08)}
+    .nav-icon{font-size:16px;width:20px;text-align:center}
+    .sidebar-footer{padding:16px 20px;border-top:1px solid rgba(255,255,255,.1)}
+    .sidebar-user{font-size:12px;color:#667;margin-bottom:10px}
+    .sidebar-user strong{color:#aab;display:block;font-size:13px}
+    .btn-logout{width:100%;background:rgba(192,57,43,.2);color:#e88;border:1px solid rgba(192,57,43,.3);font-size:11px;padding:8px;letter-spacing:1px}
+    .btn-logout:hover{background:var(--red);color:#fff}
+
+    /* MAIN CONTENT */
+    .admin-main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column}
+    .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 28px;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+    .page-title{font-family:'Oswald',sans-serif;font-size:18px;letter-spacing:1px;color:var(--navy)}
+    .topbar-actions{display:flex;gap:10px;align-items:center}
+
+    /* PANELS */
+    .panel{display:none;padding:28px;flex:1}
+    .panel.active{display:block}
+
+    /* STAT CARDS */
+    .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+    .stat-card{background:var(--white);border:1px solid var(--border);padding:20px;border-top:3px solid var(--navy)}
+    .stat-card.gold{border-top-color:var(--gold)}
+    .stat-card.red{border-top-color:var(--red)}
+    .stat-card.green{border-top-color:var(--green)}
+    .stat-val{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:var(--navy);line-height:1}
+    .stat-lbl{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-top:6px}
+
+    /* TABLE */
+    .table-card{background:var(--white);border:1px solid var(--border)}
+    .table-head{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .table-head h3{font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--navy)}
+    table{width:100%;border-collapse:collapse}
+    th{background:#f8f8f6;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);padding:11px 16px;text-align:left;border-bottom:1px solid var(--border)}
+    td{padding:13px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:#fafafa}
+    .badge{display:inline-block;padding:3px 10px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+    .badge-published{background:#e8f8f0;color:#1a7a42}
+    .badge-draft{background:#fef9ec;color:#b7860a}
+    .badge-cat{background:#eef2fa;color:#2c4fa3}
+
+    /* ARTICLE EDITOR */
+    .editor-grid{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
+    .editor-main{display:flex;flex-direction:column;gap:16px}
+    .editor-sidebar{display:flex;flex-direction:column;gap:16px}
+    .editor-card{background:var(--white);border:1px solid var(--border);padding:20px}
+    .editor-card h4{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+    .toolbar{display:flex;flex-wrap:wrap;gap:6px;padding:10px;background:#f8f8f6;border:1px solid var(--border);border-bottom:none}
+    .tool-btn{padding:5px 10px;font-family:'Oswald',sans-serif;font-size:11px;background:var(--white);border:1px solid var(--border);cursor:pointer;color:var(--text);transition:all .1s}
+    .tool-btn:hover{background:var(--navy);color:var(--gold);border-color:var(--navy)}
+    #article-content{width:100%;min-height:400px;padding:16px;border:1px solid var(--border);font-family:'Source Sans 3',sans-serif;font-size:14px;line-height:1.8;outline:none;resize:vertical}
+    #article-content:focus{border-color:var(--navy)}
+    .cover-preview{width:100%;height:160px;object-fit:cover;display:none;margin-top:10px;border:1px solid var(--border)}
+    .msg{padding:10px 14px;font-size:13px;margin-bottom:16px;display:none}
+    .msg-success{background:#e8f8f0;color:#1a7a42;border-left:3px solid var(--green)}
+    .msg-error{background:#fdecea;color:var(--red);border-left:3px solid var(--red)}
+
+    /* FILTERS */
+    .filters{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+    .filter-btn{padding:7px 16px;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;border:1px solid var(--border);background:var(--white);cursor:pointer;color:var(--muted);text-transform:uppercase;transition:all .15s}
+    .filter-btn.active,.filter-btn:hover{background:var(--navy);color:var(--gold);border-color:var(--navy)}
+
+    /* SEARCH */
+    .search-input{padding:9px 14px;border:1px solid var(--border);font-size:13px;outline:none;width:240px;font-family:'Source Sans 3',sans-serif}
+    .search-input:focus{border-color:var(--navy)}
+
+    .empty-state{text-align:center;padding:48px;color:var(--muted)}
+    .empty-state .icon{font-size:48px;margin-bottom:12px}
+    .empty-state p{font-size:14px}
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Defence<span>Post</span></div>
+    <div class="login-sub">Admin Panel</div>
+    <div class="login-error" id="login-error"></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="admin@defencepost.in"/>
+    </div>
+    <div class="form-group">
+      <label>Password</label>
+      <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="btn btn-primary" onclick="doLogin()">Login to Admin Panel</button>
+  </div>
+</div>
+
+<!-- ── ADMIN APP ── -->
+<div id="admin-app">
+  <div class="admin-layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-text">Defence<span>Post</span></div>
+        <div class="sidebar-logo-sub">ADMIN PANEL</div>
+      </div>
+      <nav class="sidebar-nav">
+        <div class="nav-item active" onclick="showPanel('dashboard')">
+          <span class="nav-icon">📊</span> Dashboard
+        </div>
+        <div class="nav-item" onclick="showPanel('articles')">
+          <span class="nav-icon">📰</span> All Articles
+        </div>
+        <div class="nav-item" onclick="showPanel('new-article')">
+          <span class="nav-icon">✏️</span> Write Article
+        </div>
+        <div class="nav-item" onclick="showPanel('comments')">
+          <span class="nav-icon">💬</span> Comments
+        </div>
+        <div class="nav-item" onclick="showPanel('subscribers')">
+          <span class="nav-icon">📧</span> Subscribers
+        </div>
+        <div class="nav-item" onclick="window.open('/')">
+          <span class="nav-icon">🌐</span> View Website
+        </div>
+      </nav>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          Logged in as<strong id="admin-name">Admin</strong>
+        </div>
+        <button class="btn btn-logout" onclick="doLogout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="admin-main">
+      <div class="topbar">
+        <div class="page-title" id="page-title">Dashboard</div>
+        <div class="topbar-actions">
+          <button class="btn btn-gold" onclick="showPanel('new-article')">+ New Article</button>
+        </div>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-val" id="dash-total">—</div>
+            <div class="stat-lbl">Total Articles</div>
+          </div>
+          <div class="stat-card gold">
+            <div class="stat-val" id="dash-published">—</div>
+            <div class="stat-lbl">Published</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-val" id="dash-drafts">—</div>
+            <div class="stat-lbl">Drafts</div>
+          </div>
+          <div class="stat-card green">
+            <div class="stat-val" id="dash-subs">—</div>
+            <div class="stat-lbl">Subscribers</div>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-head">
+            <h3>Recent Articles</h3>
+            <button class="btn btn-ghost" style="font-size:11px;padding:6px 14px;" onclick="showPanel('articles')">View All</button>
+          </div>
+          <table>
+            <thead><tr><th>Title</th><th>Category</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="dash-articles-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ALL ARTICLES -->
+      <div class="panel" id="panel-articles">
+        <div class="filters">
+          <button class="filter-btn active" onclick="filterArticles('all',this)">All</button>
+          <button class="filter-btn" onclick="filterArticles('published',this)">Published</button>
+          <button class="filter-btn" onclick="filterArticles('draft',this)">Drafts</button>
+          <input class="search-input" id="article-search" placeholder="Search articles..." oninput="searchArticles(this.value)"/>
+        </div>
+        <div class="table-card">
+          <div class="table-head">
+            <h3>Articles</h3>
+            <button class="btn btn-gold" onclick="showPanel('new-article')" style="font-size:11px;padding:7px 16px;">+ New Article</button>
+          </div>
+          <table>
+            <thead><tr><th>Title</th><th>Category</th><th>Author</th><th>Status</th><th>Views</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="articles-tbody"><tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- NEW / EDIT ARTICLE -->
+      <div class="panel" id="panel-new-article">
+        <div class="msg msg-success" id="editor-success"></div>
+        <div class="msg msg-error" id="editor-error"></div>
+        <div class="editor-grid">
+          <div class="editor-main">
+            <div class="editor-card">
+              <div class="form-group" style="margin-bottom:0">
+                <input type="text" id="article-title" placeholder="Article headline..." style="font-size:22px;font-family:'Playfair Display',serif;border:none;border-bottom:2px solid var(--border);padding:10px 0;width:100%;outline:none;color:var(--navy)"/>
+              </div>
+            </div>
+            <div class="editor-card" style="padding:0">
+              <div class="toolbar">
+                <button class="tool-btn" onclick="fmt('bold')"><b>B</b></button>
+                <button class="tool-btn" onclick="fmt('italic')"><i>I</i></button>
+                <button class="tool-btn" onclick="fmt('underline')"><u>U</u></button>
+                <button class="tool-btn" onclick="insertTag('h2')">H2</button>
+                <button class="tool-btn" onclick="insertTag('h3')">H3</button>
+                <button class="tool-btn" onclick="insertTag('blockquote')">Quote</button>
+                <button class="tool-btn" onclick="insertList()">List</button>
+                <button class="tool-btn" onclick="insertLink()">Link</button>
+                <button class="tool-btn" onclick="insertTag('hr')">— Divider</button>
+              </div>
+              <textarea id="article-content" placeholder="Write your article here using HTML or plain text...
+
+Example HTML:
+&lt;h2&gt;Section Heading&lt;/h2&gt;
+&lt;p&gt;Your paragraph text here.&lt;/p&gt;
+&lt;blockquote&gt;A key quote or highlight.&lt;/blockquote&gt;
+&lt;ul&gt;&lt;li&gt;Point one&lt;/li&gt;&lt;li&gt;Point two&lt;/li&gt;&lt;/ul&gt;"></textarea>
+            </div>
+          </div>
+          <div class="editor-sidebar">
+            <div class="editor-card">
+              <h4>Publish</h4>
+              <div class="form-group">
+                <label>Status</label>
+                <select id="article-status">
+                  <option value="draft">Draft</option>
+                  <option value="published">Published</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label><input type="checkbox" id="article-featured" style="width:auto;margin-right:6px"/> Featured Article</label>
+              </div>
+              <button class="btn btn-success" style="width:100%;margin-bottom:8px" onclick="saveArticle()">💾 Save Article</button>
+              <button class="btn btn-ghost" style="width:100%;font-size:11px" onclick="resetEditor()">Clear Form</button>
+              <input type="hidden" id="editing-id"/>
+            </div>
+            <div class="editor-card">
+              <h4>Article Details</h4>
+              <div class="form-group">
+                <label>Category</label>
+                <select id="article-category">
+                  <option>Military</option>
+                  <option>Cyber & Tech</option>
+                  <option>Geopolitics</option>
+                  <option>Policy</option>
+                  <option>Naval</option>
+                  <option>Intelligence</option>
+                  <option>Press Release</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Author</label>
+                <input type="text" id="article-author" placeholder="e.g. Brig. (Ret.) A. Sharma"/>
+              </div>
+              <div class="form-group">
+                <label>Excerpt (short summary)</label>
+                <textarea id="article-excerpt" style="min-height:80px" placeholder="Brief summary shown in article cards..."></textarea>
+              </div>
+              <div class="form-group">
+                <label>Tags (comma-separated)</label>
+                <input type="text" id="article-tags" placeholder="NATO, DRDO, missiles"/>
+              </div>
+            </div>
+            <div class="editor-card">
+              <h4>Cover Image</h4>
+              <div class="form-group">
+                <label>Upload Image</label>
+                <input type="file" id="cover-upload" accept="image/jpeg,image/png,image/webp" onchange="uploadCover(this)"/>
+                <div id="upload-progress" style="display:none;margin-top:8px;font-size:12px;color:var(--muted);font-family:Oswald,sans-serif;letter-spacing:1px">⏳ UPLOADING...</div>
+                <div id="upload-success" style="display:none;margin-top:8px;font-size:12px;color:var(--green);font-family:Oswald,sans-serif;letter-spacing:1px">✅ IMAGE UPLOADED!</div>
+                <div id="upload-error" style="display:none;margin-top:8px;font-size:12px;color:var(--red);font-family:Oswald,sans-serif;letter-spacing:1px"></div>
+              </div>
+              <div class="form-group" style="margin-top:8px">
+                <label>Or paste image URL</label>
+                <input type="text" id="article-cover-url" placeholder="https://example.com/image.jpg" oninput="previewFromUrl(this.value)" style="font-size:12px"/>
+              </div>
+              <img id="cover-preview" class="cover-preview" alt="Cover preview" style="width:100%;margin-top:10px;display:none;border:1px solid var(--border)"/>
+              <input type="hidden" id="article-cover"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMMENTS -->
+      <div class="panel" id="panel-comments">
+        <div class="table-card">
+          <div class="table-head"><h3>Pending Comments</h3></div>
+          <table>
+            <thead><tr><th>Name</th><th>Article</th><th>Comment</th><th>Date</th><th>Actions</th></tr></thead>
+            <tbody id="comments-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SUBSCRIBERS -->
+      <div class="panel" id="panel-subscribers">
+        <div class="table-card">
+          <div class="table-head">
+            <h3>Newsletter Subscribers</h3>
+            <span id="sub-count" style="font-size:13px;color:var(--muted)"></span>
+          </div>
+          <table>
+            <thead><tr><th>Name</th><th>Email</th><th>Subscribed On</th></tr></thead>
+            <tbody id="subscribers-tbody"><tr><td colspan="3" style="text-align:center;color:var(--muted);padding:24px">Loading...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://defencepost-backend-4att.onrender.com/api';
+let TOKEN = localStorage.getItem('dp_token') || '';
+let currentFilter = 'all';
+
+// ── AUTH ──────────────────────────────────────────────
+async function doLogin() {
+  const email = document.getElementById('login-email').value;
+  const password = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  try {
+    const r = await fetch(`${API}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const d = await r.json();
+    if (!r.ok) { err.style.display = 'block'; err.textContent = d.error; return; }
+    TOKEN = d.token;
+    localStorage.setItem('dp_token', TOKEN);
+    document.getElementById('admin-name').textContent = d.user.name;
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('admin-app').style.display = 'block';
+    loadDashboard();
+  } catch(e) { err.style.display = 'block'; err.textContent = 'Connection error'; }
+}
+
+function doLogout() {
+  localStorage.removeItem('dp_token');
+  TOKEN = '';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('admin-app').style.display = 'none';
+}
+
+async function apiFetch(url, opts = {}) {
+  const r = await fetch(API + url, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${TOKEN}`, ...(opts.headers || {}) }
+  });
+  const d = await r.json();
+  if (r.status === 401) { doLogout(); return null; }
+  return d;
+}
+
+// ── NAVIGATION ────────────────────────────────────────
+const panelTitles = { dashboard:'Dashboard', articles:'All Articles', 'new-article':'Write Article', comments:'Comments', subscribers:'Subscribers' };
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => { if (n.textContent.toLowerCase().includes(panelTitles[name]?.toLowerCase().split(' ')[0])) n.classList.add('active'); });
+  document.getElementById('page-title').textContent = panelTitles[name] || name;
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'articles') loadArticles();
+  if (name === 'new-article' && !document.getElementById('editing-id').value) resetEditor();
+  if (name === 'comments') loadComments();
+  if (name === 'subscribers') loadSubscribers();
+}
+
+// ── DASHBOARD ─────────────────────────────────────────
+async function loadDashboard() {
+  const [all, pub, draft, subs] = await Promise.all([
+    apiFetch('/articles/admin/all'),
+    apiFetch('/articles/admin/all?status=published'),
+    apiFetch('/articles/admin/all?status=draft'),
+    apiFetch('/newsletter/subscribers')
+  ]);
+  if (all) {
+    document.getElementById('dash-total').textContent = all.total;
+    document.getElementById('dash-published').textContent = pub?.total || 0;
+    document.getElementById('dash-drafts').textContent = draft?.total || 0;
+    document.getElementById('dash-subs').textContent = subs?.total || 0;
+    const tbody = document.getElementById('dash-articles-tbody');
+    tbody.innerHTML = (all.articles || []).slice(0, 8).map(a => `
+      <tr>
+        <td style="max-width:300px;font-weight:500">${a.title}</td>
+        <td><span class="badge badge-cat">${a.category}</span></td>
+        <td><span class="badge badge-${a.status}">${a.status}</span></td>
+        <td style="color:var(--muted);font-size:12px">${new Date(a.createdAt).toLocaleDateString()}</td>
+        <td>
+          <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editArticle('${a._id}')">Edit</button>
+          <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteArticle('${a._id}')">Delete</button>
+        </td>
+      </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No articles yet</td></tr>';
+  }
+}
+
+// ── ARTICLES ──────────────────────────────────────────
+async function loadArticles(filter = currentFilter, search = '') {
+  const q = filter === 'all' ? '' : `&status=${filter}`;
+  const s = search ? `&search=${encodeURIComponent(search)}` : '';
+  const d = await apiFetch(`/articles/admin/all?limit=50${q}${s}`);
+  if (!d) return;
+  const tbody = document.getElementById('articles-tbody');
+  tbody.innerHTML = (d.articles || []).map(a => `
+    <tr>
+      <td style="max-width:280px;font-weight:500">${a.title}</td>
+      <td><span class="badge badge-cat">${a.category}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${a.author}</td>
+      <td><span class="badge badge-${a.status}">${a.status}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${a.views}</td>
+      <td style="font-size:12px;color:var(--muted)">${new Date(a.createdAt).toLocaleDateString()}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-ghost" style="font-size:11px;padding:4px 10px" onclick="editArticle('${a._id}')">Edit</button>
+        <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteArticle('${a._id}')">Delete</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px">No articles found</td></tr>';
+}
+
+function filterArticles(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  loadArticles(f);
+}
+
+let searchTimer;
+function searchArticles(val) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => loadArticles(currentFilter, val), 400);
+}
+
+// ── EDITOR ────────────────────────────────────────────
+function resetEditor() {
+  ['article-title','article-content','article-excerpt','article-author','article-tags','article-cover','article-cover-url','editing-id'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('article-status').value = 'draft';
+  document.getElementById('article-category').value = 'Military';
+  document.getElementById('article-featured').checked = false;
+  document.getElementById('cover-preview').style.display = 'none';
+  document.getElementById('cover-upload').value = '';
+  document.getElementById('upload-progress').style.display = 'none';
+  document.getElementById('upload-success').style.display = 'none';
+  document.getElementById('upload-error').style.display = 'none';
+  document.getElementById('editor-success').style.display = 'none';
+  document.getElementById('editor-error').style.display = 'none';
+}
+
+async function editArticle(id) {
+  const d = await apiFetch(`/articles/admin/${id}`);
+  if (!d?.article) return;
+  const a = d.article;
+  document.getElementById('editing-id').value = a._id;
+  document.getElementById('article-title').value = a.title;
+  document.getElementById('article-content').value = a.content;
+  document.getElementById('article-excerpt').value = a.excerpt;
+  document.getElementById('article-author').value = a.author;
+  document.getElementById('article-tags').value = (a.tags || []).join(', ');
+  document.getElementById('article-status').value = a.status;
+  document.getElementById('article-category').value = a.category;
+  document.getElementById('article-featured').checked = a.featured;
+  document.getElementById('article-cover').value = a.coverImage || '';
+  if (a.coverImage) { const p = document.getElementById('cover-preview'); p.src = a.coverImage; p.style.display = 'block'; }
+  showPanel('new-article');
+}
+
+async function saveArticle() {
+  const title = document.getElementById('article-title').value.trim();
+  const content = document.getElementById('article-content').value.trim();
+  const excerpt = document.getElementById('article-excerpt').value.trim();
+  const errEl = document.getElementById('editor-error');
+  const sucEl = document.getElementById('editor-success');
+  errEl.style.display = 'none'; sucEl.style.display = 'none';
+
+  if (!title || !content || !excerpt) {
+    errEl.textContent = 'Title, excerpt and content are required.';
+    errEl.style.display = 'block'; return;
+  }
+
+  const payload = {
+    title, content, excerpt,
+    category: document.getElementById('article-category').value,
+    author: document.getElementById('article-author').value || 'DefencePost Desk',
+    tags: document.getElementById('article-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+    status: document.getElementById('article-status').value,
+    featured: document.getElementById('article-featured').checked,
+    coverImage: document.getElementById('article-cover').value
+  };
+
+  const editingId = document.getElementById('editing-id').value;
+  const url = editingId ? `/articles/${editingId}` : '/articles';
+  const method = editingId ? 'PUT' : 'POST';
+
+  const d = await apiFetch(url, { method, body: JSON.stringify(payload) });
+  if (d?.article) {
+    sucEl.textContent = editingId ? '✅ Article updated successfully!' : '✅ Article saved successfully!';
+    sucEl.style.display = 'block';
+    if (!editingId) { document.getElementById('editing-id').value = d.article._id; }
+  } else {
+    errEl.textContent = d?.error || 'Save failed'; errEl.style.display = 'block';
+  }
+}
+
+async function deleteArticle(id) {
+  if (!confirm('Delete this article? This cannot be undone.')) return;
+  await apiFetch(`/articles/${id}`, { method: 'DELETE' });
+  loadDashboard(); loadArticles();
+}
+
+// ── CLOUDINARY IMAGE UPLOAD ───────────────────────────
+const CLOUDINARY_CLOUD = 'djsdv0ztm';
+const CLOUDINARY_PRESET = 'defencepost';
+
+async function uploadCover(input) {
+  if (!input.files[0]) return;
+  const prog = document.getElementById('upload-progress');
+  const succ = document.getElementById('upload-success');
+  const err  = document.getElementById('upload-error');
+  prog.style.display = 'block';
+  succ.style.display = 'none';
+  err.style.display  = 'none';
+
+  try {
+    const form = new FormData();
+    form.append('file', input.files[0]);
+    form.append('upload_preset', CLOUDINARY_PRESET);
+    form.append('folder', 'defencepost');
+
+    const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, {
+      method: 'POST',
+      body: form
+    });
+    const d = await r.json();
+
+    if (d.secure_url) {
+      document.getElementById('article-cover').value = d.secure_url;
+      document.getElementById('article-cover-url').value = d.secure_url;
+      const p = document.getElementById('cover-preview');
+      p.src = d.secure_url;
+      p.style.display = 'block';
+      prog.style.display = 'none';
+      succ.style.display = 'block';
+    } else {
+      throw new Error(d.error?.message || 'Upload failed');
+    }
+  } catch(e) {
+    prog.style.display = 'none';
+    err.textContent = '❌ Upload failed: ' + e.message;
+    err.style.display = 'block';
+  }
+}
+
+function previewFromUrl(url) {
+  if (!url) return;
+  document.getElementById('article-cover').value = url;
+  const p = document.getElementById('cover-preview');
+  p.src = url;
+  p.style.display = 'block';
+  p.onerror = () => { p.style.display = 'none'; };
+}
+
+// ── TOOLBAR ───────────────────────────────────────────
+function fmt(cmd) { document.execCommand(cmd); }
+function insertTag(tag) {
+  const ta = document.getElementById('article-content');
+  const start = ta.selectionStart; const end = ta.selectionEnd;
+  const sel = ta.value.substring(start, end);
+  if (tag === 'hr') { ta.setRangeText('\n<hr/>\n', start, end, 'end'); return; }
+  ta.setRangeText(`<${tag}>${sel}</${tag}>`, start, end, 'end');
+}
+function insertList() {
+  const ta = document.getElementById('article-content');
+  const start = ta.selectionStart;
+  ta.setRangeText('\n<ul>\n  <li>Item one</li>\n  <li>Item two</li>\n</ul>\n', start, start, 'end');
+}
+function insertLink() {
+  const url = prompt('Enter URL:');
+  if (!url) return;
+  const ta = document.getElementById('article-content');
+  const start = ta.selectionStart; const end = ta.selectionEnd;
+  const sel = ta.value.substring(start, end) || 'Link text';
+  ta.setRangeText(`<a href="${url}" target="_blank">${sel}</a>`, start, end, 'end');
+}
+
+// ── COMMENTS ──────────────────────────────────────────
+async function loadComments() {
+  const d = await apiFetch('/newsletter/comments');
+  const tbody = document.getElementById('comments-tbody');
+  if (!d?.comments?.length) { tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:32px">No pending comments</td></tr>'; return; }
+  tbody.innerHTML = d.comments.map(c => `
+    <tr>
+      <td style="font-weight:500">${c.name}<br/><span style="font-size:11px;color:var(--muted)">${c.email}</span></td>
+      <td style="font-size:12px;color:var(--muted)">${c.article?.title || 'Unknown'}</td>
+      <td style="max-width:260px;font-size:13px">${c.content}</td>
+      <td style="font-size:11px;color:var(--muted)">${new Date(c.createdAt).toLocaleDateString()}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-success" style="font-size:11px;padding:4px 10px" onclick="approveComment('${c._id}')">Approve</button>
+        <button class="btn btn-danger" style="font-size:11px;padding:4px 10px" onclick="deleteComment('${c._id}')">Delete</button>
+      </td>
+    </tr>`).join('');
+}
+
+async function approveComment(id) {
+  await apiFetch(`/newsletter/comments/${id}/approve`, { method: 'PUT' });
+  loadComments();
+}
+async function deleteComment(id) {
+  if (!confirm('Delete this comment?')) return;
+  await apiFetch(`/newsletter/comments/${id}`, { method: 'DELETE' });
+  loadComments();
+}
+
+// ── SUBSCRIBERS ───────────────────────────────────────
+async function loadSubscribers() {
+  const d = await apiFetch('/newsletter/subscribers');
+  document.getElementById('sub-count').textContent = `${d?.total || 0} total`;
+  const tbody = document.getElementById('subscribers-tbody');
+  if (!d?.subscribers?.length) { tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--muted);padding:32px">No subscribers yet</td></tr>'; return; }
+  tbody.innerHTML = d.subscribers.map(s => `
+    <tr>
+      <td style="font-weight:500">${s.name}</td>
+      <td>${s.email}</td>
+      <td style="font-size:12px;color:var(--muted)">${new Date(s.createdAt).toLocaleDateString()}</td>
+    </tr>`).join('');
+}
+
+// ── INIT ──────────────────────────────────────────────
+if (TOKEN) {
+  fetch(`${API}/auth/me`, { headers: { 'Authorization': `Bearer ${TOKEN}` } })
+    .then(r => r.json()).then(d => {
+      if (d.user) {
+        document.getElementById('admin-name').textContent = d.user.name;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('admin-app').style.display = 'block';
+        loadDashboard();
+      }
+    }).catch(() => {});
+}
+</script>
+</body>
+</html>
