@@ -466,7 +466,7 @@ async function openArticle(slug){
     document.title=a.title+' - DefencePost.live';
     document.querySelector('meta[name="description"]').setAttribute('content',a.excerpt);
     var canonical=document.querySelector('link[rel="canonical"]');
-    if(canonical)canonical.setAttribute('href','https://defencepost.live/article/'+a.slug);
+    if(canonical)canonical.setAttribute('href','https://www.defencepost.live/article/'+a.slug);
     document.getElementById('ap-category').textContent=a.category;
     document.getElementById('ap-title').textContent=a.title;
     document.getElementById('ap-byline').textContent='By '+a.author+' | '+formatDate(a.createdAt)+' | '+a.readTime+' min read | '+a.views+' views';
