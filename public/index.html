@@ -9,6 +9,21 @@
   <link rel="icon" type="image/png" href="/favicon.png?v=2" />
   <meta name="description" content="DefencePost.live — Independent defence journalism covering military operations, strategic policy, technology, and geopolitics."/>
  <link rel="canonical" href="https://www.defencepost.live/"/>
+  <!-- Open Graph / Twitter defaults (updated per-article by JS) -->
+  <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="DefencePost.live"/>
+  <meta property="og:title" content="DefencePost.live — Top Defence News & Updates from India & the World"/>
+  <meta property="og:description" content="Independent defence journalism covering military operations, strategic policy, technology, and geopolitics."/>
+  <meta property="og:url" content="https://www.defencepost.live/"/>
+  <meta property="og:image" content="https://www.defencepost.live/favicon.png"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:site" content="@DefencePostIN"/>
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@graph":[
+    {"@type":"Organization","@id":"https://www.defencepost.live/#org","name":"DefencePost","url":"https://www.defencepost.live/","logo":{"@type":"ImageObject","url":"https://www.defencepost.live/favicon.png"},"sameAs":["https://twitter.com/DefencePostIN"]},
+    {"@type":"WebSite","@id":"https://www.defencepost.live/#website","url":"https://www.defencepost.live/","name":"DefencePost.live","publisher":{"@id":"https://www.defencepost.live/#org"},"potentialAction":{"@type":"SearchAction","target":"https://www.defencepost.live/?search={search_term_string}","query-input":"required name=search_term_string"}}
+  ]}
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Source+Sans+3:wght@400;500;600&family=Oswald:wght@500;600&display=swap" rel="stylesheet"/>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
@@ -378,11 +393,11 @@ function handleRoute(path){
     const cat=decodeURIComponent(path.replace('/category/',''));
     currentCategory=cat;currentSearch='';currentPage=1;
     document.getElementById('section-label').textContent=cat+' Articles';
-    fetchArticles(1);showHome();
+    fetchArticles(1);showHome();resetHomeSeo();
   } else {
     currentCategory='';currentSearch='';currentPage=1;
     document.getElementById('section-label').textContent='Latest Articles';
-    fetchArticles(1);showHome();
+    fetchArticles(1);showHome();resetHomeSeo();
   }
 }
 
@@ -465,16 +480,18 @@ async function openArticle(slug){
     const d=await r.json();
     const a=d.article;
     currentArticleId=a._id;
-    document.title=a.title+' - DefencePost.live';
-    document.querySelector('meta[name="description"]').setAttribute('content',a.excerpt);
+    ensureSeoStyles();
+    document.title=(a.metaTitle||a.title)+' - DefencePost.live';
+    document.querySelector('meta[name="description"]').setAttribute('content',a.metaDescription||a.excerpt||'');
     var canonical=document.querySelector('link[rel="canonical"]');
     if(canonical)canonical.setAttribute('href','https://www.defencepost.live/article/'+a.slug);
+    applyArticleSeo(a);
     document.getElementById('ap-category').textContent=a.category;
     document.getElementById('ap-title').textContent=a.title;
     document.getElementById('ap-byline').textContent='By '+a.author+' | '+formatDate(a.createdAt)+' | '+a.readTime+' min read | '+a.views+' views';
-    document.getElementById('ap-body').innerHTML=a.content;
+    document.getElementById('ap-body').innerHTML=buildTakeawaysHtml(a.keyTakeaways)+a.content+buildFaqHtml(a.faqs);
     var cover=document.getElementById('ap-cover');
-    if(a.coverImage){cover.src=a.coverImage;cover.style.display='block';}else cover.style.display='none';
+    if(a.coverImage){cover.src=a.coverImage;cover.alt=a.coverImageAlt||a.title||'';cover.style.display='block';}else cover.style.display='none';
     document.getElementById('ap-tags').innerHTML=(a.tags||[]).map(function(t){return'<span class="tag-pill">'+t+'</span>';}).join('');
     document.getElementById('home-page').style.display='none';
     document.getElementById('article-page').style.display='block';
@@ -482,6 +499,128 @@ async function openArticle(slug){
     loadComments(a._id);
     loadRelated(a.category,a.slug);
   }catch(e){navigateTo('/');}
+}
+
+// ── SEO HELPERS ────────────────────────────────────────
+function escapeHtml(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+function absUrl(u){
+  if(!u)return'';
+  if(/^https?:\/\//i.test(u))return u;
+  var base=API.replace(/\/api\/?$/,'');
+  return base+(u.charAt(0)==='/'?'':'/')+u;
+}
+
+function upsertMeta(attr,key,content){
+  var el=document.head.querySelector('meta['+attr+'="'+key+'"]');
+  if(!el){el=document.createElement('meta');el.setAttribute(attr,key);document.head.appendChild(el);}
+  el.setAttribute('content',content||'');
+}
+
+function injectJsonLd(graph){
+  var el=document.getElementById('ld-article');
+  if(!el){el=document.createElement('script');el.type='application/ld+json';el.id='ld-article';document.head.appendChild(el);}
+  el.textContent=JSON.stringify(graph);
+}
+
+function buildTakeawaysHtml(list){
+  if(!list||!list.length)return'';
+  return'<div class="key-takeaways"><h2>Key Takeaways</h2><ul>'+
+    list.map(function(t){return'<li>'+escapeHtml(t)+'</li>';}).join('')+'</ul></div>';
+}
+
+function buildFaqHtml(list){
+  if(!list||!list.length)return'';
+  var items=list.filter(function(f){return f&&f.question&&f.answer;});
+  if(!items.length)return'';
+  return'<section class="faq-section"><h2>Frequently Asked Questions</h2>'+
+    items.map(function(f){return'<div class="faq-item"><h3 class="faq-q">'+escapeHtml(f.question)+'</h3><p class="faq-a">'+escapeHtml(f.answer)+'</p></div>';}).join('')+
+    '</section>';
+}
+
+function buildArticleJsonLd(a){
+  var origin='https://www.defencepost.live';
+  var url=origin+'/article/'+a.slug;
+  var img=absUrl(a.coverImage);
+  var kw=(a.keywords&&a.keywords.length?a.keywords:(a.tags||[]));
+  var news={
+    "@context":"https://schema.org","@type":"NewsArticle",
+    "headline":(a.metaTitle||a.title||'').slice(0,110),
+    "description":a.metaDescription||a.excerpt||'',
+    "articleSection":a.category,"keywords":kw.join(', '),"inLanguage":"en-IN",
+    "datePublished":a.createdAt,"dateModified":a.updatedAt||a.createdAt,
+    "mainEntityOfPage":{"@type":"WebPage","@id":url},
+    "author":{"@type":"Person","name":a.author||'DefencePost Desk'},
+    "publisher":{"@type":"Organization","name":"DefencePost","logo":{"@type":"ImageObject","url":origin+"/favicon.png"}}
+  };
+  if(img)news.image=[img];
+  var graph=[news,{
+    "@context":"https://schema.org","@type":"BreadcrumbList",
+    "itemListElement":[
+      {"@type":"ListItem","position":1,"name":"Home","item":origin},
+      {"@type":"ListItem","position":2,"name":a.category,"item":origin+'/category/'+encodeURIComponent(a.category)},
+      {"@type":"ListItem","position":3,"name":(a.title||'').slice(0,90),"item":url}
+    ]
+  }];
+  if(a.faqs&&a.faqs.length){
+    var q=a.faqs.filter(function(f){return f&&f.question&&f.answer;});
+    if(q.length)graph.push({
+      "@context":"https://schema.org","@type":"FAQPage",
+      "mainEntity":q.map(function(f){return{"@type":"Question","name":f.question,"acceptedAnswer":{"@type":"Answer","text":f.answer}};})
+    });
+  }
+  return graph;
+}
+
+function applyArticleSeo(a){
+  var origin='https://www.defencepost.live';
+  var url=origin+'/article/'+a.slug;
+  var title=a.metaTitle||a.title||'';
+  var desc=a.metaDescription||a.excerpt||'';
+  var img=absUrl(a.coverImage);
+  var kw=(a.keywords&&a.keywords.length?a.keywords:(a.tags||[]));
+  upsertMeta('name','keywords',kw.join(', '));
+  upsertMeta('property','og:type','article');
+  upsertMeta('property','og:site_name','DefencePost.live');
+  upsertMeta('property','og:title',title);
+  upsertMeta('property','og:description',desc);
+  upsertMeta('property','og:url',url);
+  if(img)upsertMeta('property','og:image',img);
+  upsertMeta('property','article:section',a.category||'');
+  if(a.createdAt)upsertMeta('property','article:published_time',a.createdAt);
+  if(a.updatedAt)upsertMeta('property','article:modified_time',a.updatedAt);
+  upsertMeta('name','twitter:card','summary_large_image');
+  upsertMeta('name','twitter:site','@DefencePostIN');
+  upsertMeta('name','twitter:title',title);
+  upsertMeta('name','twitter:description',desc);
+  if(img)upsertMeta('name','twitter:image',img);
+  injectJsonLd(buildArticleJsonLd(a));
+}
+
+function resetHomeSeo(){
+  var home='https://www.defencepost.live/';
+  var t='DefencePost.live — Top Defence News & Updates from India & the World';
+  var dsc='DefencePost.live — Independent defence journalism covering military operations, strategic policy, technology, and geopolitics.';
+  document.title=t;
+  var md=document.querySelector('meta[name="description"]');
+  if(md)md.setAttribute('content',dsc);
+  var canonical=document.querySelector('link[rel="canonical"]');
+  if(canonical)canonical.setAttribute('href',home);
+  upsertMeta('property','og:type','website');
+  upsertMeta('property','og:title',t);
+  upsertMeta('property','og:description',dsc);
+  upsertMeta('property','og:url',home);
+  upsertMeta('property','og:image',home+'favicon.png');
+  upsertMeta('name','twitter:title',t);
+  upsertMeta('name','twitter:description',dsc);
+  var ld=document.getElementById('ld-article');
+  if(ld)ld.textContent='';
+}
+
+function ensureSeoStyles(){
+  if(document.getElementById('seo-styles'))return;
+  var css=".key-takeaways{background:var(--light);border-left:4px solid var(--gold);padding:18px 22px;margin:0 0 26px}.key-takeaways h2{font-family:'Playfair Display',serif;font-size:20px;color:var(--navy);margin-bottom:10px}.key-takeaways ul{margin:0;padding-left:20px}.key-takeaways li{margin:6px 0;font-size:15px;line-height:1.6}.faq-section{margin:34px 0 10px;border-top:2px solid var(--border);padding-top:22px}.faq-section>h2{font-family:'Playfair Display',serif;font-size:24px;color:var(--navy);margin-bottom:16px}.faq-item{margin-bottom:16px}.faq-q{font-size:17px;font-weight:600;color:var(--navy);margin-bottom:4px}.faq-a{font-size:15px;line-height:1.7;color:var(--text)}";
+  var st=document.createElement('style');st.id='seo-styles';st.textContent=css;document.head.appendChild(st);
 }
 
 function shareTwitter(){var url=encodeURIComponent(window.location.href);var title=encodeURIComponent(document.getElementById('ap-title').textContent);window.open('https://twitter.com/intent/tweet?text='+title+'&url='+url+'&via=DefencePostIN','_blank');}
