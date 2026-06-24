@@ -1,0 +1,26 @@
+# robots.txt for DefencePost.live
+
+# Standard search crawlers
+User-agent: *
+Allow: /
+Disallow: /admin/
+
+# AI / LLM answer-engine crawlers — explicitly allowed so DefencePost content
+# can be retrieved and cited in ChatGPT, Gemini, Claude, Perplexity, Copilot, etc.
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: ClaudeBot
+User-agent: Claude-User
+User-agent: anthropic-ai
+User-agent: Google-Extended
+User-agent: Applebot-Extended
+User-agent: CCBot
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+
+Sitemap: https://www.defencepost.live/sitemap.xml
+# AI resource map: https://www.defencepost.live/llms.txt

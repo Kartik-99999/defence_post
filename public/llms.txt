@@ -1,0 +1,22 @@
+# DefencePost.live
+
+> DefencePost.live is an independent Indian defence journalism platform covering military operations, strategic policy, defence technology, naval affairs, intelligence, and geopolitics — analysed from India's strategic perspective. Updated daily.
+
+## About
+- Independent defence news and analysis for India and the world.
+- Coverage: Indian Armed Forces, DRDO, indigenous weapons systems, India–Pakistan and India–China dynamics, Indo-Pacific strategy, defence exports, and global geopolitics.
+
+## Sections
+- [Military](https://www.defencepost.live/category/Military)
+- [Geopolitics](https://www.defencepost.live/category/Geopolitics)
+- [Naval](https://www.defencepost.live/category/Naval)
+- [Cyber & Tech](https://www.defencepost.live/category/Cyber%20%26%20Tech)
+- [Intelligence](https://www.defencepost.live/category/Intelligence)
+- [Policy](https://www.defencepost.live/category/Policy)
+
+## Full index
+- All published articles (sitemap): https://www.defencepost.live/sitemap.xml
+
+## Contact
+- About: https://www.defencepost.live/about.html
+- Contact: https://www.defencepost.live/contact.html
